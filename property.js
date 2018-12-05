@@ -598,6 +598,7 @@ function create_barChart2() {
 
     legend.append("rect")
         .attr("x", width - 18)
+        .attr("y", height - 308)
         .attr("width", 18)
         .attr("height", 18)
         .style("fill", color);
@@ -660,6 +661,18 @@ function createSelectBox() {
             abbreviation: 'ALL'
         },
         {
+            name: 'CALIFORNIA',
+            abbreviation: 'CA'
+        },
+        {
+            name: 'TEXAS',
+            abbreviation: 'TX'
+        },
+        {
+            name: 'WASHINGTON',
+            abbreviation: 'WA'
+        },
+        {
             name: 'ALABAMA',
             abbreviation: 'AL'
         },
@@ -679,10 +692,7 @@ function createSelectBox() {
             name: 'ARKANSAS',
             abbreviation: 'AR'
         },
-        {
-            name: 'CALIFORNIA',
-            abbreviation: 'CA'
-        },
+        
         {
             name: 'COLORADO',
             abbreviation: 'CO'
@@ -859,10 +869,7 @@ function createSelectBox() {
             name: 'TENNESSEE',
             abbreviation: 'TN'
         },
-        {
-            name: 'TEXAS',
-            abbreviation: 'TX'
-        },
+        
         {
             name: 'UTAH',
             abbreviation: 'UT'
@@ -879,10 +886,7 @@ function createSelectBox() {
             name: 'VIRGINIA',
             abbreviation: 'VA'
         },
-        {
-            name: 'WASHINGTON',
-            abbreviation: 'WA'
-        },
+        
         {
             name: 'WEST VIRGINIA',
             abbreviation: 'WV'
