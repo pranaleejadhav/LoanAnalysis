@@ -170,7 +170,6 @@ dataset = d3.nest()
  .entries(dataset.filter(function(d) {
                 return d.PropertyState == state_name;
             }));
-
 }
     //loanAmt.sort();
     loanAmt.sort(function(a, b) {
@@ -205,7 +204,7 @@ dataset = d3.nest()
 
     dataset.forEach(function(r) {
 
-                var x = r.LoanAmountRequested
+                var x = parseInt(r.LoanAmountRequested)
                 var type = 0
                 switch (true) {
                     case (x <= loanAmt[42]):
