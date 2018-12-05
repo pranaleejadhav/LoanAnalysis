@@ -89,7 +89,7 @@ var totalOffers={}
  console.log(d.values[0].value*100/totalOffers[d.key])
  });
 
-
+formatDecimal = d3.format(".2f");
 nest.sort(function(a, b) { return d3.ascending(a.key, b.key)})
 
 
@@ -121,7 +121,7 @@ nest.sort(function(a, b) { return d3.ascending(a.key, b.key)})
               .style("left", d3.event.pageX - 50 + "px")
               .style("top", d3.event.pageY - 70 + "px")
               .style("display", "inline-block")
-              .html('OfferId: '+(d.key) + "<br>"+ 'Total Offers: '+totalOffers[d.key]+"<br>"+'Percentage of Acceptance: '+(d.values[0].value*100/totalOffers[d.key]) );
+              .html('OfferId: '+(d.key) + "<br>"+ 'Total Offers: '+totalOffers[d.key]+"<br>"+'Percentage of Acceptance: '+formatDecimal(d.values[0].value*100/totalOffers[d.key]) );
         })
     		.on("mouseout", function(d){ tooltip.style("display", "none");});
 });
