@@ -912,7 +912,11 @@ function createSelectBox() {
     for (var i = 0; i < usStates.length; i++) {
         var option = document.createElement("option");
         option.text = usStates[i].abbreviation;
-        option.value = usStates[i].abbreviation;
+        if (usStates[i].abbreviation == "ALL"){
+            option.value = "";
+        } else {
+           option.value = usStates[i].abbreviation;
+        }
         stateSelect.add(option);
 
     }
