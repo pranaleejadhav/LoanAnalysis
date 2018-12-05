@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+body {
+  margin: 15px;
+  background-color: #FFFFFF    
+}
+.bar {
+	fill: #6F257F;
+}
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #D4D8DA;
+  stroke-width: 1px;
+  shape-rendering: crispEdges;
+}
+.x path {
+	display: none;
+}
+.toolTip {
+	position: absolute;
+  display: none;
+  min-width: 80px;
+  height: auto;
+  background: none repeat scroll 0 0 #ffffff;
+  border: 1px solid #6F257F;
+  padding: 14px;
+  text-align: center;
+}
+</style>
+<svg width="580" height="400"></svg>
+<script src="https://d3js.org/d3.v4.min.js"></script>
+<script>
+var nest;
+
+var svg = d3.select("svg"),
+    margin = {top: 20, right: 10, bottom: 30, left: 100},
+    width = +svg.attr("width") - margin.left - margin.right,
+    height = +svg.attr("height") - margin.top - margin.bottom;
+  
+var tooltip = d3.select("body").append("div").attr("class", "toolTip");
+  
+var x = d3.scaleLinear().range([0, width]);
+//var main_y0 = d3.scale.ordinal().rangeRoundBands([0, main_height], 0.2); 
+//var main_y1 = d3.scale.ordinal();
+var y = d3.scaleBand().range([height, 0]);
+
+var g = svg.append("g")
+		.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+  
+d3.csv("https://raw.githubusercontent.com/lchennar/Visual/master/Final_data	.csv", function(error, data) {
+  	if (error) throw error;
+  
+
+  
+	var nest = d3.nest()
+	  .key(function(d){
+	    return d.LenderId;
+	  }).sortKeys(d3.ascending)
+	  .key(function(d){
+	  
+	    return (d.Status==1);
+	  })
+	  
+	  .rollup(function(d){
+			
+	 		return d3.sum(d, function(d) {return (1)});
+		})
+	  .entries(data)
+	  
+
+	  
+   
+  
+console.log(nest);
+
+var totalOffers={}
+ nest.forEach(function(d) { 
+
+ console.log(d.key,d.values.length)
+ if (d.values.length==2)
+ 
+ totalOffers[d.key]=d.values[0].value+d.values[1].value;
+ 
+ else if (d.values.length==1)
+ totalOffers[d.key]=d.values[0].value
+ console.log(d.key,totalOffers[d.key])
+ console.log(d.values[0].value*100/totalOffers[d.key])
+ });
+
+
+nest.sort(function(a, b) { return d3.ascending(a.key, b.key)})
+
+
+  	//var i=0;
+  
+  	x.domain([0, d3.max(nest, function(d) { return d.values[0].value*100/totalOffers[d.key];})]);
+    y.domain(nest.map(function(d) { return d.key; })).padding(0.1);
+	//d3.select(".g-intro").text("Bar chart for Percentage of acceptance for each lender .");
+    g.append("g")
+        .attr("class", "x axis")
+       	.attr("transform", "translate(0," + height + ")")
+      	.call(d3.axisBottom(x).ticks(4).tickFormat(function(d) { return parseInt(d); }).tickSizeInner([-height]));
+
+    g.append("g")
+        .attr("class", "y axis")
+        .call(d3.axisLeft(y));
+
+    g.selectAll(".bar")
+        .data(nest)
+        .enter().append("rect")
+        .attr("class", "bar")
+        .attr("x", 0)
+        .attr("height", y.bandwidth())
+        .attr("y", function(d) { return y(d.key); })
+        .attr("width", function(d) { return x(d.values[0].value*100/totalOffers[d.key]); 
+		})
+        .on("mousemove", function(d){
+            tooltip
+              .style("left", d3.event.pageX - 50 + "px")
+              .style("top", d3.event.pageY - 70 + "px")
+              .style("display", "inline-block")
+              .html('OfferId: '+(d.key) + "<br>"+ 'Total Offers: '+totalOffers[d.key]+"<br>"+'Percentage of Acceptance: '+(d.values[0].value*100/totalOffers[d.key]) );
+        })
+    		.on("mouseout", function(d){ tooltip.style("display", "none");});
+});
+
+</script>

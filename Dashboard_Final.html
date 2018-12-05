@@ -1,0 +1,1091 @@
+<!DOCTYPE html>
+<html>
+<head>
+     <title>Lending Tree Dashboard</title>
+  <script src="http://d3js.org/d3.v4.min.js"></script>
+  <script src="http://d3js.org/topojson.v1.min.js"></script>
+  <script src="https://d3js.org/d3-queue.v2.min.js"></script>
+  <script src="https://d3js.org/d3-scale-chromatic.v1.min.js"></script>
+  <script src="https://d3js.org/d3-scale.v2.min.js"></script>
+ <!-- <script src="https://cdn.rawgit.com/apogaku/VAProject/master/PieChart.js"></script>-->
+  <style  type="text/css" src="https://raw.githubusercontent.com/apogaku/VAProject/master/PieChart.css"></style>
+ <style type="text/css">
+ /* Style the tab */
+.tab {
+    overflow: hidden;
+    border: 1px solid #ccc;
+    background-color: #11E558;
+    padding-bottom: 5px;
+}
+
+/* Style the buttons inside the tab */
+.tab button {
+    background-color: inherit;
+    float: left;
+    border: none;
+    outline: none;
+    cursor: pointer;
+    padding: 7px 8px;
+    transition: 0.3s;
+    font-size: 17px;
+}
+
+/* Change background color of buttons on hover */
+.tab button:hover {
+    background-color: #ddd;
+}
+
+/* Create an active/current tablink class */
+.tab button.active {
+    background-color: #ccc;
+}
+.split {
+    height: 100%;
+    width: 50%;
+    position: fixed;
+    z-index: 1;
+    top: 0;
+    overflow-x: hidden;
+    padding-top: 20px;
+}
+
+.left {
+    left: 0;
+    background-color: #111;
+}
+
+.right {
+    right: 0;
+    background-color: red;
+}
+
+
+/* Style the tab content */
+.tabcontent {
+    display: none;
+    padding: 3px 6px;
+    border: 1px solid #ccc;
+    border-top: none;
+}
+        svg .myrect {
+            fill: steelblue;
+            stroke-width: 0px;
+        }
+        svg .myrect:hover {
+            fill: red;
+        }
+
+/* Style the top navigation bar */
+.topnav {
+    overflow: hidden; 
+    background-color: #333;
+}
+
+/* Style the topnav links */
+.topnav a {
+    float: left;
+    display: block;
+    color: #f2f2f2;
+    text-align: center;
+    padding: 4px 10px;
+    text-decoration: none;
+}
+ div.tooltip {   
+  position: absolute;           
+  text-align: center;           
+  width: 150px;                  
+  height: 40px;                 
+  padding: 2px;             
+  font: 12px sans-serif;        
+  background: lightsteelblue;   
+  border: 0px;      
+  border-radius: 8px;           
+  pointer-events: none;         
+}
+.states {
+  fill: white;
+  stroke: #fff;
+  stroke-linejoin: round;
+}
+
+.heading{
+
+  font-weight: bold;
+  font-family: system-ui;
+  font-style: oblique;
+  background-color: inherit;
+
+  float: right;
+  border: none;
+  outline: none;
+  
+  transition: 0.3s;
+  font-size: 17px;
+
+}
+body {  
+  font-family: 'Droid Sans', sans-serif;  
+}
+  
+
+.axis {
+  font-size: 14px;
+  font-weight: bold;
+}
+  
+text {
+  fill: #727075;
+  stroke: none;
+}
+
+.axis path,
+.axis line {
+  fill: none;
+  stroke: none;
+  stroke-width: 2px;
+  shape-rendering: crispEdges;
+}
+
+
+div.tooltip { 
+    position: absolute;     
+    text-align: center;     
+    width: 60px;          
+    height: 28px;         
+    padding: 2px;       
+    font: 12px sans-serif;    
+    background: lightsteelblue; 
+    border: 0px;    
+    border-radius: 8px;     
+    pointer-events: none;     
+}
+.grid path {
+  stroke: none;
+}
+
+.grid line {
+  stroke: #E0E0E0;
+  shape-rendering: crispEdges;
+}
+  
+.data-line {
+  fill: none;
+  stroke: #3C92BA;
+  stroke-width: 4px;
+}
+  
+.data-circle {
+  fill: #3C92BA;     
+}
+  
+.axis-title {
+  text-anchor: end;
+  fill: #5D6971;
+  font-weight: normal;
+}
+  
+.axis-tspan {
+  font-size: 12px;
+}
+
+.clinical-cut-off-line {
+  fill: none;
+  stroke: #89868E;
+  stroke-dasharray: 8,8;
+  stroke-width: 4px;
+}
+
+.clinical-cut-off-text {
+  text-transform: uppercase;
+  text-anchor: start;
+  font-size: 12px;
+  font-weight: bold;
+}
+  </style>
+        
+        <script type="text/javascript">
+            var myEntireData;
+            var myData_tree;
+            var myData_bar;
+            var data1;
+            var stateID;
+            var maximum_bar=0,minimum_bar=0;
+             var data_new = [];
+             var data_stack;
+             var data1_stack=[]
+            var margin_bar = {top: 10, right: 10, bottom: 30, left: 20};
+            var svgWidth_bar = 400 - margin_bar.left - margin_bar.right;
+            var svgHeight_bar = 250-margin_bar.top - margin_bar.bottom;
+
+            var margin_tree = {top: 10, right: 10, bottom: 30, left: 20};
+            var svgWidth_tree = 350 - margin_tree.left - margin_tree.right;
+            var svgHeight_tree = 240 - margin_tree.top - margin_tree.bottom;
+
+            var margin_stack = {top: 10, right: 10, bottom: 30, left: 20};
+            var svgWidth_stack = 500 - margin_stack.left - margin_stack.right;
+            var svgHeight_stack = 300 - margin_stack.top - margin_stack.bottom;
+
+          var margin = {top: 10, right: 10, bottom: 30, left: 50};
+            var svgWidth = 500;
+            var svgHeight = 500 - margin.top - margin.bottom;
+            function GetCheckedStatus(temp)
+            {
+              removeBarChart();
+              var input = document.getElementById(temp);
+            if(temp=="status_reject")
+    {     
+ document.getElementById("status_accept").checked = false;
+ console.log('here'+input);
+d3.csv("https://raw.githubusercontent.com/apogaku/VAProject/master/Final_data.csv",function(data)
+              {
+                
+                  myEntireData=data;
+
+              data.forEach(function(d) {
+                  
+                  if(d.Status==2 ){
+                    trimdate=d.TopicCreatedOn.substring(5, 7);
+                  d.date = trimdate;
+                  d.close = d.Status;
+                }});  
+             data1 = d3.nest()
+              .key(function(d) { 
+                  
+          if(d.date==01){return 0;}
+             if(d.date==02){return 1;}
+              if(d.date==03){return 2;}
+               if(d.date==04){return 3;}
+                if(d.date==05){return 4;}
+                 if(d.date==06){return 5;}
+                  if(d.date==07){return 6;}
+                if(d.date==08){return 7;}
+              if(d.date==09){return 8;}
+              parseInt(d.date);}
+          )
+           .rollup(function(v) { return v.length; })
+           .entries(myEntireData);
+          // console.log("reloaded here");
+            data1.pop();
+           console.log(data1);
+            generateDataBar(2);
+            createBarChart();
+                
+          });
+ generateDataTree(2);
+            createTreeMap();
+}
+ else
+           { 
+ d3.csv("https://raw.githubusercontent.com/apogaku/VAProject/master/Final_data.csv",function(data)
+              {
+                document.getElementById("status_reject").checked = false;
+                  myEntireData=data;
+
+              data.forEach(function(d) {
+                  
+                  if(d.Status==1){
+                    trimdate=d.TopicCreatedOn.substring(5, 7);
+                  d.date = trimdate;
+                  d.close = d.Status;
+                }});  
+             data1 = d3.nest()
+              .key(function(d) { 
+                  
+          if(d.date==01){return 0;}
+             if(d.date==02){return 1;}
+              if(d.date==03){return 2;}
+               if(d.date==04){return 3;}
+                if(d.date==05){return 4;}
+                 if(d.date==06){return 5;}
+                  if(d.date==07){return 6;}
+                if(d.date==08){return 7;}
+              if(d.date==09){return 8;}
+              parseInt(d.date);}
+          )
+           .rollup(function(v) { return v.length; })
+           .entries(myEntireData);
+          // console.log("reloaded here");
+           data1 = data1.slice(1);
+           console.log(data1);
+
+            generateDataBar(1);
+            createBarChart();
+                
+              }     );
+
+           generateDataTree(1);
+            createTreeMap();
+            }
+
+            }
+function removeBarChart_clear(){
+  document.getElementById("status_reject").checked = false;
+  document.getElementById("status_accept").checked = false;
+     var svg = d3.select("#svg_bar_g_id");
+              svg.selectAll("rect").remove();
+               svg.selectAll("g").remove();
+              svg.selectAll("clipPath").remove();
+              svg.selectAll("text").remove();
+             myEntireData=[];
+             data1=[];
+              console.log("remove bar chart test");
+console.log(data1);
+          d3.csv("https://raw.githubusercontent.com/apogaku/VAProject/master/Final_data.csv",function(datanew)
+              {
+                
+                  myEntireData=datanew;        
+                data1=[];
+              datanew.forEach(function(d) {
+                  trimdate=d.TopicCreatedOn.substring(5, 7);
+                  d.date = trimdate;
+                  d.close = d.Status;
+                });  
+             data1 = d3.nest()
+              .key(function(d) { 
+                  
+          if(d.date==01){return 0;}
+             if(d.date==02){return 1;}
+              if(d.date==03){return 2;}
+               if(d.date==04){return 3;}
+                if(d.date==05){return 4;}
+                 if(d.date==06){return 5;}
+                  if(d.date==07){return 6;}
+                if(d.date==08){return 7;}
+              if(d.date==09){return 8;}
+              parseInt(d.date);}
+          )
+           .rollup(function(v) { return v.length; })
+           .entries(myEntireData);    
+           console.log("Inside remove");  
+              console.log(data1); 
+              // data1=[];
+             // console.log(data1);
+                generateDataBar("all");
+                createBarChart();
+                generateDataTree("all");
+            createTreeMap();
+              }     );
+
+           
+
+             // loadData();
+
+}
+
+
+            function loadData()
+            {//removeBarChart();
+          d3.csv("https://raw.githubusercontent.com/apogaku/VAProject/master/Final_data.csv",function(data)
+              {
+                
+                  myEntireData=data;
+           
+
+                d3.select("#svg_tree")
+                            .attr("width", svgWidth_tree + margin_tree.left + margin_tree.right)
+                            .attr("height", svgHeight_tree + margin_tree.top + margin_tree.bottom)
+                            .append("g")
+                            .attr("id", "svg_tree_g_id")
+                            .attr("transform", "translate(" + margin_tree.left + "," + margin_tree.top + ")");
+                 d3.select("#svg_bar")
+                            .attr("width", svgWidth_bar + margin_bar.left + margin_bar.right)
+                            .attr("height", svgHeight_bar + margin_bar.top + margin_bar.bottom)
+                            .append("g")
+                            .attr("id", "svg_bar_g_id")
+                            .attr("transform", "translate(" + margin_bar.left + "," + margin_bar.top + ")");             
+                 d3.select("#svg_stack")
+                            .attr("width", svgWidth_stack + margin_stack.left + margin_stack.right)
+                            .attr("height", svgHeight_stack + margin_stack.top + margin_stack.bottom)
+                            .append("g")
+                            .attr("id", "svg_stack_g_id")
+                            .attr("transform", "translate(" + margin_stack.left + "," + margin_stack.top + ")");  
+                generateDataTree(null);
+                createTreeMap(); 
+                   data_stack = d3.nest()
+                      .key(function(d) { return d.OfferId;}
+                  )
+                       .rollup(function(v) { return v.length; })
+                     
+                      .entries(data);
+
+  data_stack.sort(function (a, b) {
+                  return b.value - a.value;
+                  })
+
+
+                generateDataStack(null);
+                createStackedBar();
+
+              data.forEach(function(d) {
+                  trimdate=d.TopicCreatedOn.substring(5, 7);
+                  d.date = trimdate;
+                  d.close = d.Status;
+                });  
+             data1 = d3.nest()
+              .key(function(d) { 
+                  
+          if(d.date==01){return 0;}
+             if(d.date==02){return 1;}
+              if(d.date==03){return 2;}
+               if(d.date==04){return 3;}
+                if(d.date==05){return 4;}
+                 if(d.date==06){return 5;}
+                  if(d.date==07){return 6;}
+                if(d.date==08){return 7;}
+              if(d.date==09){return 8;}
+              parseInt(d.date);}
+          )
+           .rollup(function(v) { return v.length; })
+           .entries(myEntireData);
+
+           
+          // console.log(data1);
+                generateDataBar(null);
+                createBarChart();
+                
+              }     );
+}
+
+function generateDataStack(temp)
+{
+if(temp)
+{
+d3.select("#title_stack").text("Accepted");
+for(var i=0;i<10;i++){
+  var singleObj = {}
+  singleObj['key']=data_stack[i].key;
+  singleObj['value']=data_stack[i].value;
+  //console.log("record1  "+i);
+  count1=0;
+    count2=0;
+    count3=0;
+  for(var j=0;j<myEntireData.length;j++)
+  {
+    
+    if(myEntireData[j].OfferId==data_stack[i].key)
+    {
+      if(myEntireData[j].Status==1)
+      {
+        count2=count2+1;
+        singleObj['Accepted']=count2;
+      }
+     
+    }
+
+  }
+ 
+  data1_stack.push(singleObj);
+
+}
+}
+else
+{
+d3.select("#title_stack").text("Stacked bar Chart");
+
+
+for(var i=0;i<10;i++){
+  var singleObj = {}
+  singleObj['key']=data_stack[i].key;
+  singleObj['value']=data_stack[i].value;
+  //console.log("record1  "+i);
+  count1=0;
+    count2=0;
+    count3=0;
+  for(var j=0;j<myEntireData.length;j++)
+  {
+    
+    if(myEntireData[j].OfferId==data_stack[i].key)
+    {
+    //  console.log("Matched"+j+"Status values"+mydata[j].Status);
+
+      if(myEntireData[j].Status==0)
+      {
+        count1=count1+1;
+        singleObj['NotRespond']=count1+1;
+      //  console.log("Not NotRespond count increased for"+mydata[j].OfferId);
+      }
+      else if(myEntireData[j].Status==1)
+      {
+        count2=count2+1;
+       // console.log("Status values"+mydata[j].Status+"  countr "+count2);
+        singleObj['Accepted']=count2;
+      }
+      else if(myEntireData[j].Status==2)
+      {
+        count3=count3+1;
+        singleObj['']=count3+1;
+      }
+    }
+
+//console.log(JSON.stringify(singleObj));
+  }
+ 
+  data1_stack.push(singleObj);
+
+}
+
+
+
+}
+
+
+}
+
+            function generateDataBar(myCommodity)
+            {
+              if (myCommodity)
+              {
+
+                 if(myCommodity=="all")
+                 d3.select("#title_bar").text("Monthly : All status");
+
+                //console.log("here"+myCommodity);
+                if(myCommodity==1)
+                d3.select("#title_bar").text("Monthly : Accepted");
+
+                if(myCommodity==2)
+                d3.select("#title_bar").text("Monthly :  Rejected");
+              //   console.log(data1);
+                // console.log(data_new);  
+                 data_new = [];  
+                // console.log("after empty");  
+                // console.log(data_new);        
+    data1.forEach(function(d){
+      var singleObj = {}
+ 
+      singleObj['value']=d.value;
+      if(d.key=="0"){
+
+singleObj['module']=0;
+      }
+        if(d.key=="1"){
+          
+singleObj['module']=1;
+        }
+          if(d.key=="2"){singleObj['module']=2;}
+            if(d.key=="3"){singleObj['module']=3;}
+              if(d.key=="4"){singleObj['module']=4;}
+                if(d.key=="5"){singleObj['module']=5;}
+                  if(d.key=="6"){singleObj['module']=6;}
+                    if(d.key=="7"){singleObj['module']=7;}
+                      if(d.key=="8"){singleObj['module']=8;}
+                     // console.log(singleObj);
+data_new.push(singleObj);
+    
+});
+//console.log(JSON.stringify(data_new));
+                
+              } else
+              {
+                d3.select("#title_bar").text("Month: All Status");
+               
+    data1.forEach(function(d){
+      var singleObj = {}
+      singleObj['value']=d.value;
+      if(d.key=="0"){
+
+singleObj['module']=0;
+      }
+        if(d.key=="1"){
+          
+singleObj['module']=1;
+        }
+          if(d.key=="2"){singleObj['module']=2;}
+            if(d.key=="3"){singleObj['module']=3;}
+              if(d.key=="4"){singleObj['module']=4;}
+                if(d.key=="5"){singleObj['module']=5;}
+                  if(d.key=="6"){singleObj['module']=6;}
+                    if(d.key=="7"){singleObj['module']=7;}
+                      if(d.key=="8"){singleObj['module']=8;}
+                  //    console.log(singleObj);
+data_new.push(singleObj);
+    })
+
+//console.log(JSON.stringify(data_new));
+   }
+
+            }
+                        function generateDataTree(myYear)
+            {
+               minimum_bar=0;
+              maximum_bar=0;
+              if (myYear)
+              {
+                if(myYear=="all")
+                { d3.select("#title_tree").text("State wise : All status");
+var filtercheck=myEntireData.filter(function(d) { return d.Status>=0; });}
+                //console.log("here"+myCommodity);
+                if(myYear==1)
+{                d3.select("#title_tree").text("State wise : Accepted");
+var filtercheck=myEntireData.filter(function(d) { return d.Status>0 && d.Status<2; });}
+                if(myYear==2)
+                {  
+                d3.select("#title_tree").text("State wise :  Rejected");
+ var filtercheck=myEntireData.filter(function(d) { return d.Status>1; });
+  }
+           
+              myData_tree = d3.nest()
+                               .key(function(d) { return d.State;}
+                  )
+               .rollup(function(v) { return v.length; })
+               .entries(filtercheck); 
+                            //  console.log(myData_tree);              
+            for (var i = 0; i < myData_tree.length; i++) {
+      if( myData_tree[i].value < minimum_bar) minimum_bar = myData_tree[i].value;
+    if( myData_tree[i].value > maximum_bar) maximum_bar = myData_tree[i].value;
+    //console.log(myData_tree[i]);  
+          }
+               
+
+             
+              } else
+              {
+                d3.select("#title_tree").text("State wise : All status");
+
+                myData_tree = d3.nest()
+                               .key(function(d) { return d.State;}
+                  )
+               .rollup(function(v) { return v.length; })
+                              .entries(myEntireData); 
+                            //  console.log(myData_tree);              
+            for (var i = 0; i < myData_tree.length; i++) {
+      if( myData_tree[i].value < minimum_bar) minimum_bar = myData_tree[i].value;
+    if( myData_tree[i].value > maximum_bar) maximum_bar = myData_tree[i].value;
+    //console.log(myData_tree[i]);  
+
+          }
+           
+ //console.log("maximum_bar"+maximum_bar+"minimum_bar"+minimum_bar);
+              }
+ 
+            }
+                        
+          function reSortRoot(root,value_key) {
+              //console.log("Calling");
+              for (var key in root) {
+                if (key == "key") {
+                  root.name = root.key;
+                  delete root.key;
+                }
+                if (key == "values") {
+                  root.children = [];
+                  for (item in root.values) {
+                    root.children.push(reSortRoot(root.values[item]));
+                  }
+                  delete root.values;
+                }
+              }
+              return root;
+            }
+            
+function createBarChart() {
+           var svg = d3.select("#svg_bar_g_id");
+           var x = d3.scaleLinear().range([0, svgWidth_bar - (margin_bar.left + margin_bar.right)]);
+var y = d3.scaleLinear().range([svgHeight_bar - (margin_bar.top * 2), 0]);
+//console.log("details");
+var line = d3.line()
+    .x(function(d) { return x(d.module); })
+    .y(function(d) { return y(d.value); });
+                         
+  x.domain(d3.extent(data_new, function(d) { return d.module; }));
+    y.domain([
+      (Math.floor(d3.min(data_new, function(d) { return d.value; }) / 10) * 10),
+      (Math.ceil(d3.max(data_new, function(d) { return d.value; }) / 10) * 10)
+    ]);
+    var g = svg.append("g")
+    .attr("transform", "translate(" + margin_bar.left + "," + margin_bar.top + ")");
+
+    // add the Y gridlines
+    g.append("g")     
+        .attr("class", "grid")
+        .call(d3.axisLeft(y)
+          .tickSize(-svgWidth_bar)
+          .tickFormat("")
+          .ticks(6)
+        );
+
+    g.append("g")
+        .attr("class", "axis axis--x")
+        .attr("transform", "translate(" + ((margin_bar.left + margin_bar.right) / 2) + "," + (svgHeight_bar - margin_bar.top) + ")")
+        .call(d3.axisBottom(x)
+          .ticks(6)
+          .tickFormat(function(d) { 
+             
+          if(d==0){return "Jan";}
+             if(d==1){return "Feb";}
+              if(d==2){return "Mar";}
+               if(d==3){return "Apr";}
+                if(d==4){return "May";}
+                 if(d==5){return "June";}
+                  if(d==6){return "July";}
+                if(d==7){return "Aug";}
+              if(d==8){return "Sep";}})
+        );
+        
+
+    g.append("g")
+        .attr("class", "axis axis--y")
+        .call(d3.axisLeft(y).ticks(6))
+      .append("text")
+        .attr("class", "axis-title")
+        .attr("transform", "rotate(-90)")
+        .attr("y", 6)
+        .attr("dy", ".71em")
+        .text("Status scores");
+  
+  // Define the div for the tooltip
+var div = d3.select("body").append("div") 
+    .attr("class", "tooltip")       
+    .style("opacity", 0);
+    // Data line and dots group
+    var lineAndDots = g.append("g")
+        .attr("class", "line-and-dots")
+        .attr("transform", "translate(" + ((margin_bar.left + margin_bar.right) / 2) + "," + 0 + ")")
+
+    // Data line
+    lineAndDots.append("path")
+        .datum(data_new)
+        .attr("class", "data-line")
+        .attr("d", line);
+
+    // Data dots
+    lineAndDots.selectAll("line-circle")
+        .data(data_new)
+      .enter().append("circle")
+        .attr("class", "data-circle")
+        .attr("r", 5)
+        .attr("cx", function(d) { return x(d.module); })
+        .attr("cy", function(d) { return y(d.value); })
+        .on("mouseover", function(d) {    
+            div.transition()    
+                .duration(200)    
+                .style("opacity", .9);    
+            div .html(d.value)  
+                .style("left", (d3.event.pageX) + "px")   
+                .style("top", (d3.event.pageY - 28) + "px");  
+            })          
+        .on("mouseout", function(d) {   
+            div.transition()    
+                .duration(500)    
+                .style("opacity", 0); 
+        });                    
+}
+            function removeTreeMap() {
+              var svg = d3.select("#svg_tree_g_id");
+              svg.selectAll("rect").remove();
+              svg.selectAll("clipPath").remove();
+              svg.selectAll("text").remove();
+            }
+ function removeBarChart() {
+              var svg = d3.select("#svg_bar_g_id");
+              svg.selectAll("rect").remove();
+               svg.selectAll("g").remove();
+              svg.selectAll("clipPath").remove();
+              svg.selectAll("text").remove();
+            }
+  function createTreeMap() {
+  var div_tooltip = d3.select("body").append("div")
+    .attr("class", "tooltip")
+    .style("opacity", 0);
+   var width = 320,
+    height = 250;
+   // generate scale colors
+   var projection = d3.geoAlbers()
+    .scale(400)
+    .translate([width / 2, height / 2]);
+
+   var path = d3.geoPath()
+    .projection(projection);
+
+   //var svg = d3.select("body").append("svg")
+    //.attr("width", width)
+    //.attr("height", svgHeight_bar);
+   var minimum = 5,
+    maximum = 24;
+
+   var minimumColor = "#BFD3E6",
+    maximumColor = "#88419D";
+   // var colorScheme = d3.schemeGreens[4];
+   var colorScale = d3.scaleSequential(d3.interpolateBlues).domain([minimum_bar, maximum_bar])
+  // var color_scale = d3.scale.linear().domain([0, maximum_bar]).range(['beige', 'red']);
+   //Moves selection to front
+   d3.selection.prototype.moveToFront = function() {
+    return this.each(function() {
+     this.parentNode.appendChild(this);
+    });
+   };
+
+   //Moves selection to back
+   d3.selection.prototype.moveToBack = function() {
+    return this.each(function() {
+     var firstChild = this.parentNode.firstChild;
+     if (firstChild) {
+      this.parentNode.insertBefore(this, firstChild);
+     }
+    });
+   };
+   // create hierarchical structure
+   // myData is just an array
+   var tmpTree = {};
+   tmpTree.key = "Data";
+   tmpTree.values = myData_tree;
+   var StateById = {};
+   var stateNames = {};
+   var svg = d3.select("#svg_tree_g_id"); 
+   var totalstatus=0;
+   //create empty object
+   // rename key -> name and add children
+   //var myTree = reSortRoot(tmpTree);
+   //load topojson data
+function getSum(totalstatus, num) {
+    return total + num;
+}
+       d3.queue()
+    .defer(d3.json, "https://gist.githubusercontent.com/danasilver/9497067/raw/e2903610a83963b3a94af2c53568b1f58a0c44d7/us2.json") // Load US states
+    .defer(d3.csv, "https://raw.githubusercontent.com/apogaku/VAProject/master/Final_data.csv")
+    .await(ready); // Run 'ready' when JSONs are loaded
+
+   function ready(error, us, losses) {
+    if (error) throw error;
+console.log(myData_tree);
+    for (var i = 0; i < myData_tree.length; i++) {
+     var dataState = myData_tree[i].key;
+     if (myData_tree[i].value < minimum_bar) minimum_bar = myData_tree[i].value;
+     if (myData_tree[i].value > maximum_bar) maximum_bar = myData_tree[i].value;
+
+     var dataValue = myData_tree[i].value;
+        totalstatus=totalstatus+myData_tree[i].value;
+     StateById[dataState] = dataValue;
+
+
+     for (var j = 0; j < losses.length; j++) {
+      var stateabv = losses[j].State;
+
+      if (dataState == losses[j].State) {
+
+
+       myData_tree[i].state_abv = stateabv;
+       stateNames[dataState] = stateabv;
+
+       break;
+
+      }
+     }
+
+    }
+
+formatDecimal = d3.format(".2f");
+
+    console.log(stateNames);
+    console.log(StateById);
+    console.log(totalstatus);
+    // add cells
+   var cell = svg.append("g")
+     .attr("class", "states")
+     .selectAll("path")
+     .data(topojson.feature(us, us.objects.usStates).features) // Bind TopoJSON data elements
+     .enter().append("path")
+     .attr("fill", function(d) {
+     // console.log(StateById[d.properties.STATE_ABBR]);
+      if (StateById[d.properties.STATE_ABBR] == undefined) return colorScale(0);
+      else return colorScale(StateById[d.properties.STATE_ABBR]);
+     })
+     .attr("d", path)
+     .style("stroke", "black")
+     .on('mouseover', function(d) {   
+            div_tooltip.transition()        
+                .duration(200)      
+                .style("opacity", .9);  
+              //  stateID=d.properties.STATE_ABBR;    
+            div_tooltip .html( " State:"+d.properties.STATE_ABBR+"  "+"<br>Status:" + formatDecimal((StateById[d.properties.STATE_ABBR]/totalstatus)*100)+"%"  )
+                .style("left", (d3.event.pageX) + "px")     
+                .style("top", (d3.event.pageY - 28) + "px");
+                 //generateDataBar(stateNames[d.id]);
+      //removeBarChart();
+      //createBarChart();
+                                  })
+      .on('mouseout',  function() {
+
+//console.log('mouse out in MAp') ;  
+            div_tooltip.transition()        
+                .duration(200)      
+                .style("opacity", 0); 
+//generateDataBar(null);
+  //    removeBarChart();
+    //  createBarChart();
+   
+     });
+
+   
+   }
+}
+function createStackedBar()
+{
+  var div = d3.select("body").append("div")   
+              .attr("class", "tooltip")               
+              .style("opacity", 0);
+  var svg = d3.select("#svg_stack_g_id");
+ 
+    // Notice that the yScale is not inverted on the yScale
+    var yScale = d3.scaleLinear().domain([0,10]).range([240,10])
+    
+    // We create a heightscale where the y is inverted!
+    var heightScale = d3.scaleLinear().domain([0,10]).range([10, 240])
+ 
+    var movies = ["Accepted","Reject","NotRespond"]
+    var colorScale = d3.scaleOrdinal().domain(movies).range(["#fcd88a", "#cf7c1c", "#93c464"])
+
+var xScale = d3.scaleLinear().domain([0,10]).range([10,450])
+   // console.log(JSON.stringify(data1_stack));
+    //console.log(data)
+    
+    yAxis = d3.axisLeft().scale(yScale)
+        .tickSize(-500)
+    
+    d3.select("#svg_stack_g_id").append("g")
+        .attr("class", "yAxis")
+        .call(yAxis)
+        .attr("transform",`translate(${10}, 0)`)
+    
+    xAxis = d3.axisBottom().scale(xScale)
+        .tickSize(-500)   
+    
+    d3.select("#svg_stack_g_id").append("g")
+        .attr("class", "xAxis")
+        .call(xAxis)
+        .attr("transform",`translate(0, ${240})`)
+    
+    d3.select("g.xAxis").selectAll("g.tick").selectAll("text")
+    
+    d3.select("g.xAxis").selectAll("g.tick").selectAll("line")
+    
+    var stackLayout = d3.stack()
+        .keys(movies)
+    //console.log("test"+stackLayout(data));
+    d3.select("#svg_stack_g_id").selectAll("g.bar")
+    .data(stackLayout(data1_stack)) // Pass the sorted data in
+    .enter()
+    .append("g")
+    .attr("class", "bar")
+    .each(function(d) {
+  
+     var list={};  // console.log("test"+typeof d[0]);
+
+       d3.select(this).selectAll("rect") 
+            .data(d)
+            .enter()
+            .append("rect")
+            .attr("width", 35)
+            .attr("height", p => heightScale(p[1]) - heightScale(p[0]))
+            .attr("x", (p, i) => xScale(i) + 15)
+            .attr("y", p => yScale(p[1]))
+            .style("fill", colorScale(d.key))
+             .on("mouseover", function(d) {  
+             
+   for (var obj in d) {
+   if(typeof d[obj]=="object"){
+    
+  //console.log("dude"+d[obj].key);
+}
+    //        console.log(d);
+                      div.transition()        
+                          .duration(200)      
+                          .style("opacity", .9);      
+                      div .html("Top OfferId: "+d[obj].key )  
+                          .style("left", (d3.event.pageX) + "px")     
+                          .style("top", (d3.event.pageY - 28) + "px");
+                                             
+                                            }  })                  
+                          .on("mouseout", function(d) {    
+                          //console.log('mouse out in bar') ;  
+                      div.transition()        
+                          .duration(500)      
+                          .style("opacity", 0);   
+               
+                   })
+
+    })
+
+}
+
+function Reload()
+{
+
+  document.getElementById("barchart1").innerHTML ='<object type="text/html" data="barchartv2.html?state_name='+ stateID+'"  style="width: 730px;height: 410px"></object>';
+}
+
+window.onload = loadData;
+
+</script>
+
+
+    </head>
+ <body>
+<div class="tab" style="height:25px">
+  <button class="tablinks" onclick="openCity(event, 'London')" id="defaultOpen">Acceptance Rate</button>
+  <button class="tablinks" onclick="openCity(event, 'Paris')">Lender Trends</button>
+  
+  <button class="heading" style="padding-left: 250px" disabled>Lending Tree Dashboard</button>
+
+</div>
+
+<div id="London" class="tabcontent">
+<div>
+ 
+    <table align="left" style="padding-top: 10px">
+
+    <tr>
+      <th><div id="title_filter" align="left" style="width: 100px">Filters<br><br>
+  <input type="checkbox" id="status_accept" value="1" style="font-weight:normal" onclick="GetCheckedStatus('status_accept');">Accepted<br>
+  <input type="checkbox" id="status_reject" value="2" style="font-weight:normal" onclick="GetCheckedStatus('status_reject');">Rejected<br><br>
+  <input type="submit" value="Clear" onclick="removeBarChart_clear();"><br>
+</div> </th>
+      <th><div id="title_bar" align="center">Losses 2015 [$] Damage Type: All</div><svg id="svg_bar" style="padding-top: 20px;padding-left: 20px;padding-right: 10px"></svg></th>
+    <th><div id="title_tree" align="center">Choropleth</div><svg id="svg_tree" style="padding-top: 40px"></svg></th>
+    <th><div id="title" align="center">New Customers</div><div id="barchart"></div></th>
+  
+   </table>
+<hr>
+<div id="barchart1" align="center">Stacked </div>
+<!--
+    <table align="left" style="padding-top: 10px">
+    <tr><th></th>
+    <th><div id="barchart2" align="center">Choropleth</div></th></tr>   
+    </table> -->
+  
+</div>
+
+</div>
+
+<div id="Paris" class="tabcontent">
+</div>
+
+<div id="Tokyo" class="tabcontent">
+
+</div>
+
+<script>
+document.getElementById("Paris").innerHTML='<object type="text/html" data="Lender_Trends.html"  style="width: 100%;height: 740px" ></object>';
+document.getElementById("barchart").innerHTML='<object type="text/html" data="PieChart.html"  style="height: 260px; width: 385px"  ></object>';
+document.getElementById("barchart1").innerHTML='<object type="text/html" data="property.html"  style="width: 100%;height: 710px"></object>';
+//document.getElementById("barchart2").innerHTML='<object type="text/html" data="veteran.html"  style="width:500px;height: 510px"></object>';
+</script>
+<script>
+  document.getElementById("defaultOpen").click();
+function openCity(evt, cityName) {
+    var i, tabcontent, tablinks;
+    tabcontent = document.getElementsByClassName("tabcontent");
+    for (i = 0; i < tabcontent.length; i++) {
+        tabcontent[i].style.display = "none";
+    }
+    tablinks = document.getElementsByClassName("tablinks");
+    for (i = 0; i < tablinks.length; i++) {
+        tablinks[i].className = tablinks[i].className.replace(" active", "");
+    }
+    document.getElementById(cityName).style.display = "block";
+    evt.currentTarget.className += " active";
+}
+</script>
+
+    </body>
+</html>

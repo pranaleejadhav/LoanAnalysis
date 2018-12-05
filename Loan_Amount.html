@@ -1,0 +1,413 @@
+<!-- Visual Analytics - LendingTree Data Analysis -->
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Visualisation of Accepted Loan Amounts</title>
+    <script src="https://d3js.org/d3.v5.js"></script>
+    <script src="https://d3js.org/d3-scale-chromatic.v1.min.js"></script>
+    <script src="https://d3js.org/topojson.v2.min.js"></script>
+    <script type="text/javascript">
+      const svgWidth_bar = 500
+      const svgHeight_bar = 500
+      // const svgWidth_bar = window.outerWidth * 0.4
+      // const svgHeight_bar = 600
+      const margin_bar = {top: 10, right: 80, bottom: 20, left: 10};
+      var gWidth_bar = svgWidth_bar - margin_bar.left - margin_bar.right;
+      var gHeight_bar = svgHeight_bar - margin_bar.top - margin_bar.bottom;
+
+      const svgWidth_chor = 920
+      const svgHeight_chor = 600
+      // const svgWidth_chor = window.outerWidth * 0.55
+      // const svgHeight_chor = 600
+      const margin_chor = {top: 0, right: 10, bottom: 10, left: 10};
+      var gWidth_chor = svgWidth_chor - margin_chor.left - margin_chor.right;
+      var gHeight_chor = svgHeight_chor - margin_chor.top - margin_chor.bottom;
+
+      var myMasterData;
+      var myBarData;
+      var myChorData;
+      var mapFillData = d3.map();
+      var names = {};
+      var minAmount, maxAmount;
+      const scaleFactor = 1E6 // showing values in million
+      const format = d3.format(".3")
+
+
+      function loadData()
+      {
+        d3.csv("https://raw.githubusercontent.com/Deepthiarun/D3/master/Final_data.csv")
+          .then(function(data)
+          {
+            console.log(data)
+            myMasterData = data
+            generateBarData(myMasterData, null)   // master data and state code
+            createBarChart(myBarData,null);
+            generateChorData(myMasterData, null) // master data and loss type
+            createMap(myChorData)                // creating map first time
+            updateMap(null)                      // filling map colors
+          }
+        );
+        d3.tsv("https://raw.githubusercontent.com/Deepthiarun/D3/master/us-state-names.tsv", function(data,i){
+          names[data.id] = data.name
+          });
+      }
+      
+      function generateBarData(inputData, state) {
+        if(state === 'all' || state === 'All' || state === null){
+          myBarData = d3.nest()
+                      .key(function(d) { return d.LenderId;})
+                      .rollup(function(d) { 
+                        return d3.sum(d, function(g) {return g.LoanAmount; });
+                      })
+                      .entries(inputData.filter(function(d) {return d.Status === "1";}))
+          myBarData.sort(function (a, b) {return a.value - b.value;})
+        }else{
+          if(state < 10){
+            state = state.replace(/^0+(?!\.|$)/, '')   // removing leading 0 from state code
+          }
+          console.log("State: "+state)
+          myBarData = d3.nest()
+                      .key(function(d) { return d.LenderId;})
+                      .rollup(function(d) { 
+                        return d3.sum(d, function(g) {return g.LoanAmount; });
+                      })
+                      .entries(inputData.filter(function(d) {return d.State_Code === state;}).filter(function(d) {return d.Status === "1";}))
+          myBarData.sort(function (a, b) {return a.value - b.value;})
+        }
+        // console.log(myBarData)
+      }
+
+      function createBarChart(chartData,state) {
+        const scaleFactor = 1E6
+        var title;
+        var svg = d3.select("#svg-bar")
+                  .attr("width", svgWidth_bar)
+                  .attr("height", svgHeight_bar+50)
+                  .append("g")
+                  .attr("id", "svg_bar_g")
+                  .attr("width", gWidth_bar)
+                  .attr("height", gHeight_bar)
+                  .attr("transform", `translate(${margin_bar.left},${margin_bar.top+0})`);
+
+        state? title="Loan Amount per Lenders in "+state : title="Total Loan amount per Lenders"
+        // generate scales
+        var yScale = d3.scaleBand()
+                      .domain(chartData.map( function(d) 
+                        { return d.key; }))
+                      .range([0, gHeight_bar])
+                      .paddingInner(0.1);
+
+        var xScale = d3.scaleLinear()
+                      .domain([0, d3.max(chartData, function(d) { return (d.value/scaleFactor); })])
+                      .range([0, gWidth_bar]);
+
+        // generate axis
+        svg.append("g")
+            .attr("transform", "translate(20,50)")
+            .call(d3.axisLeft(yScale));
+
+        svg.append("g")
+            .attr("transform", "translate("+ (20) +"," + (gHeight_bar+50) + ")")
+            .call(d3.axisBottom(xScale));
+
+        // generate bars
+        svg.selectAll("rect")
+            .data(chartData)
+            .enter()
+            .append("rect")
+            .attr("transform", "translate(20,50)")
+            .attr("x", 0)
+            .attr("y", function(d, i)
+              {
+                return yScale(d.key)
+              })
+            .attr("height", function(d, i)
+              {
+                return yScale.bandwidth();
+              })
+            .attr("width", function(d, i)
+              {
+                return xScale(d.value/scaleFactor)
+              })
+            .attr("class", "myrect")
+            .on("mouseover", function(d) {
+              generateChorData(myMasterData,d.key)
+              updateMap(d.key);
+            })
+            .on("mouseout", function(d) {
+              generateChorData(myMasterData,null)
+              updateMap(null);
+            })
+            .append("title")
+            .text((d)=> "Lender Id: "+d.key+" , Accepted Loan: "+format(d.value/scaleFactor)+"M")
+        // data valeus
+        svg.selectAll("myrect")  		
+          .data(chartData)
+          .enter()
+          .append("text")
+          .attr("class","label")
+          .attr("x", (function(d) { return (xScale(d.value/scaleFactor) + 45) }  ))
+          .attr("y", function(d) { return (yScale(d.key)+(yScale.bandwidth()/2)+50) })
+          .text(function(d) { return "$"+format(d.value/scaleFactor)+"M"; });  
+      /// end of data values
+      
+            // Map Title
+            const title_g = svg.append("g")
+            .attr("id","map-title-bar")
+            .attr("transform", "translate(0,30)")
+      title_g.append("text")
+            .attr("class", "title")
+            .attr("x", gWidth_bar/2 - 100)
+            .attr("y", 5)
+            .attr("fill", "#000")
+            .attr("text-anchor", "center")
+            .attr("font-weight", "bold")
+            .text(title);
+      }
+
+      function removeBarChart(){
+          var svg_g = d3.select("#svg_bar_g")
+          svg_g.remove()
+      }
+
+      function generateChorData(inputData, lenderId) {
+        if(lenderId === null || lenderId === 'All' || lenderId === 'all'){
+          myChorData = d3.nest()
+                      .key(function(d) { return d.State_Code;})
+                      .rollup(function(d) { 
+                        return d3.sum(d, function(g) {return g.LoanAmount; });
+                      })
+                      .entries(inputData.filter(function(d) {return d.Status === "1";}))
+        }else{
+          myChorData = d3.nest()
+                      .key(function(d) { return d.State_Code;})
+                      .rollup(function(d) { 
+                        return d3.sum(d, function(g) {return g.LoanAmount; });
+                      })
+                      .entries(inputData.filter(function(d) {return d.Status === "1";}).filter(function(d) {return d.LenderId === lenderId;}))
+        }
+
+        myChorData.map(function(d,i) { 
+          if(d.key > 10){
+            mapFillData.set(d.key, d.value); 
+          }
+          else
+          {
+            mapFillData.set(("0"+d.key), d.value); 
+          }
+        })
+
+        minAmount = d3.min(d3.values(mapFillData)) /scaleFactor // in Million
+        maxAmount = d3.max(d3.values(mapFillData)) /scaleFactor // in Million
+        if (maxAmount > 90){
+            maxAmount = 90
+        }
+      }
+
+      function createMap(inputData, title){
+        const mapWidth = svgWidth_chor
+        const mapHeight = svgHeight_chor
+        const promises = [d3.json("https://raw.githubusercontent.com/Deepthiarun/D3/master/us-10m.v1.json")]
+        const path = d3.geoPath()
+        var svg = d3.select("#svg-chor")
+            .attr("width",mapWidth+'px')
+            .attr("height",mapHeight+'px')
+            .attr("transform","scale(0.8)")
+
+        Promise.all(promises).then(ready)
+        function ready([us]) {
+          // Country Border line
+          svg.append("path")
+            .attr("class", "country-border")
+            .attr('stroke',"#000")
+            .attr("stroke-width", 2)
+            .attr("d", path(topojson.feature(us, us.objects.nation)));
+          // indivual states
+          var state_g = svg.append("g")
+            .attr("id","state-group")
+          state_g.selectAll("path")
+          .data(topojson.feature(us, us.objects.states).features)
+          .enter().append("path")
+          .attr("class","state")
+          .attr("stroke", "gray")
+          .attr("stroke-width",1)
+          // .attr("stroke-dasharray","5,3")
+          .on("mouseover", function(d) {
+              removeBarChart()
+              generateBarData(myMasterData, d.id)
+              createBarChart(myBarData,names[parseInt(d.id)])
+          })
+          .on("mouseout", function(d) {
+              removeBarChart()
+              generateBarData(myMasterData, null)
+              createBarChart(myBarData, null)
+          })
+          updateMap(null)
+        }
+      }
+      
+      function updateMap(title){
+        const path = d3.geoPath();
+        var color = d3.scaleQuantize()
+            .domain([minAmount,maxAmount])
+            .range(d3.schemeOranges[9])
+            // .range(d3.schemeBlues[9])
+            .nice()
+
+        var svg = d3.select("#svg-chor")
+        var state_g = d3.select("#state-group")
+
+        title? title="Accepted Loan Amount ($M) from Lender Id "+title : title="Total Accepted Loan Amount ($M)"
+
+        state_g.selectAll('path')
+        .attr("fill", function(d) { 
+            d.amount = mapFillData.get(d.id)
+            if(d.amount === null || d.amount === undefined){d.amount = 0}
+            return color(d.amount/scaleFactor)})
+          .attr("d", path)
+          .append("title")
+          .text(function(d) { return names[parseInt(d.id)]+"\nAccepted Loan : $" + format((d.amount)/scaleFactor) + "M"; })
+
+        removeLegend() // to clear previous values, if any
+        createLegend(title)
+        // ============== LEGEND =================== //
+        function createLegend(title){
+          const x = d3.scaleLinear()
+              .domain([minAmount,maxAmount])
+              .rangeRound([600, 860]);
+          
+          // Map Title
+          const title_g = svg.append("g")
+                .attr("id","map-title")
+                .attr("transform", "translate(10,40)")
+          title_g.append("text")
+                .attr("class", "title")
+                .attr("x", gWidth_chor/2 - 100)
+                .attr("y", -20)
+                .attr("fill", "#000")
+                .attr("text-anchor", "center")
+                .attr("font-weight", "bold")
+                .text(title);
+
+          // Legend
+          const g = svg.append("g")
+                .attr("id","legend")
+                .attr("transform", "translate(10,40)");
+
+          g.selectAll("rect")
+            .data(color.range().map(d => color.invertExtent(d)))
+            .enter().append("rect")
+              .attr("height", 8)
+              .attr("x", d => x(d[0]))
+              .attr("width", d => x(d[1]) - x(d[0]))
+              .attr("fill", d => color(d[0]));
+
+          g.append("text")
+              .attr("class", "caption")
+              .attr("x", x.range()[0]+150)
+              .attr("y", -6)
+              .attr("fill", "#000")
+              .attr("text-anchor", "start")
+              .attr("font-weight", "bold")
+              .text('scale');
+
+          g.call(d3.axisBottom(x)
+              .tickSize(13)
+              .tickFormat(format)
+              .tickValues(color.range().slice(1).map(d => color.invertExtent(d)[0]))
+          )
+        }
+        function removeLegend(){
+          var title_g = d3.select("#map-title")
+                  title_g.remove();
+          var g = d3.select("#legend")
+                  g.remove();
+        }
+        // ============== END LEGEND =================== //
+      }
+
+      window.onload = loadData;
+    </script>
+    <style type="text/css">
+
+      body{
+        margin: 0
+      }
+
+      #title{
+        width: 100%;
+        font-style: italic;
+        font-weight: bold;
+        align-content: center;
+        text-align:center;
+        color: rgb(6, 6, 82);
+      }
+
+      h2{
+        margin: 4px auto;
+      }
+
+      #container{
+        display: flex;
+        flex-direction: row;
+        flex-wrap: nowrap;
+        justify-content: center
+      }
+
+      #chor-container {
+        display: flex;
+        /* max-width: 60%; */
+      }
+
+      #bar-container {
+        display: flex;
+        /* max-width: 40%; */
+      }
+
+      svg {
+        border: 1px solid rgb(206, 205, 205)
+      }
+
+      svg .myrect {
+        fill: rgb(252, 97, 26);
+          stroke-width: 0px;
+      }
+
+
+      svg .myrect:hover {
+          fill: red;
+      }
+
+
+        svg text.label {
+        fill:green;
+        font-size: 15px;  
+        text-anchor: middle;
+      }
+
+      .all-states {
+        fill: none;
+      }
+
+      .state:hover {
+        fill: red;
+      }
+
+      .state-border {
+        fill: none;
+        stroke: #fff;
+        stroke-linejoin: round;
+      }
+    </style>
+  </head>
+  <body>
+    <div id='container'>
+      <div id='chor-container'>
+        <svg id='svg-chor'></svg>
+      </div>
+      <div id='bar-container'>
+        <svg id='svg-bar'></svg>
+      </div>
+    </div>
+  </body>
+</html>
