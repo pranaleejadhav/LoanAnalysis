@@ -598,7 +598,6 @@ function create_barChart2() {
 
     legend.append("rect")
         .attr("x", width - 18)
-        .attr("y", height - 308)
         .attr("width", 18)
         .attr("height", 18)
         .style("fill", color);
