@@ -53,10 +53,12 @@ function processData() {
     if (loan_range != "") {
         dataset = d3.nest()
             .entries(dataset.filter(function(d) {
-                return d.LoanAmountRequested <= loan_range;
+                return parseInt(d.LoanAmountRequested) <= parseInt(loan_range);
             }));
 
     }
+
+
 
     var cnt = 0
     var statusByProperty = d3.nest()
