@@ -175,7 +175,7 @@ dataset = d3.nest()
         return a - b
     });
 
-    console.log(loanAmt)
+  //  console.log(loanAmt)
 
     pdata = new Array(8);
     var start = 42;
@@ -199,7 +199,7 @@ dataset = d3.nest()
 
     }
 
-    console.log(pdata)
+   // console.log(pdata)
 
     dataset.forEach(function(r) {
 
@@ -287,8 +287,8 @@ function create_barChart() {
 
     //770 450
 
-    console.log(width)
-    console.log(height)
+   // console.log(width)
+  //  console.log(height)
     var svg = d3.select("#svg_bar")
         .attr("width", width + margin.left + 80)//width + margin.left + margin.right)
         .attr("height", height + margin.top + margin.bottom)
